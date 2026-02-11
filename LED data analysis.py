@@ -14,14 +14,28 @@ import pandas as pd
 import math
 
 #Enter csv file path of LED EL spectrum
-aa = r"filepath"
+aa = r"spectrum filepath"
 
-#Enter csv file path of LED V-I-L data
-bb = r"filepath"
+#Enter txt file path of LED V-I-L data
+bb = r"LED VIL filepath"
 
+#Enter dark voltage, for example 0.021 V
+dark_voltage = 0.021
+
+result = pd.read_csv(bb, sep="\t", header=None)
+result.columns = ["V", "I", "L"]
+
+#Dark voltage correction 
+result["L"] = result["L"] - dark_voltage
+
+new_path = bb.replace(".txt", ".csv")
+
+result.to_csv(new_path, index=False)
+
+#Read the EL spectrum
 df = pd.read_csv(aa)
-result = pd.read_csv(bb)
 
+df.columns = ["wave","lumi"]
 
 # Gaussian
 # Define the gaussian function
@@ -137,7 +151,7 @@ L = (C * k * Vphd)/(weighted_avg * Omega * A*10**(-6))
 result['luminous density L cd m^-2'] = L
 
 # Write all results to the csv file
-result.to_csv(bb, index=False)
+result.to_csv(new_path, index=False)
 
 
 # Plot J-V-L
