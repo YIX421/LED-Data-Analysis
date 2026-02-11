@@ -13,9 +13,14 @@ from scipy import integrate as intg
 import pandas as pd
 import math
 
+#Enter csv file path of LED EL spectrum
+aa = r"filepath"
 
-df = pd.read_csv(r'your file path of LED EL spectrum')
-result = pd.read_csv(r'your file path of LED V-I-L data')
+#Enter csv file path of LED V-I-L data
+bb = r"filepath"
+
+df = pd.read_csv(aa)
+result = pd.read_csv(bb)
 
 
 # Gaussian
@@ -68,19 +73,18 @@ print('Fitted standard deviation = ', coeff[2])
 print('Fitted offset =', coeff[3])
 
 
-# Get c (the weight average)
+# Get weighted_avg (the weight average)
 Slamda = lambda a: coeff[0]*np.exp(-(a-coeff[1])**2/(2*coeff[2]**2)) + coeff[3]
 Int_Qlamda=intg.quad(lambda a:-1.47818 + 0.00538*a - 2.99871*10**(-6)*a**2,350,800)
 
 Int_Slamda=intg.quad(Slamda,350,800)
 TotalInt= intg.quad(lambda a:(-1.47818 + 0.00538*a - 2.99871*10**(-6)*a**2) * (coeff[0]*np.exp(-(a-coeff[1])**2/(2*coeff[2]**2)) + coeff[3]),350,800)
 
-c=TotalInt[0]/Int_Slamda[0]
+weighted_avg=TotalInt[0]/Int_Slamda[0]
 
-print('C =',c)
 
 # D mm is the distance from LED to detector
-D = 100
+D = 110
 
 # A mm^2 is the active area of LED
 A = 4
@@ -88,14 +92,14 @@ A = 4
 # Transimpedance gain
 TG = 4.75*10**5
 
-# H e s^-1 V^-1 is the sensitivity of the gain transimpedance amlifier
-H = 1/(TG*1.6*10**(-19))
+# C e s^-1 V^-1 is conversion factor between the output voltage of the transimpedance amplifier and the electron flux
+C = 1/(TG*1.6*10**(-19))
 
-# Aphd is the active area of the photodetector
-Aphd = 75.4
+# R mm is the radius of the photodetector
+R = 4.9
 
 # Get Ωphd sr
-Omega = 2 * math.pi * (1-np.cos((Aphd/math.pi)**0.5/D))
+Omega = 2 * math.pi * (1-D/(D**2+R**2)**0.5)
 
 Plamda = lambda a:698.83958952*np.exp(-(a-560.18504094)**2/(2*43.80189435**2)) - 1.09653258
 PlamdaSlamda = lambda a:(698.83958952*np.exp(-(a-560.18504094)**2/(2*43.80189435**2)) - 1.09653258)*(coeff[0]*np.exp(-(a-coeff[1])**2/(2*coeff[2]**2)) + coeff[3])*(6.626e-34*2.998e+08*10**9/a)
@@ -118,7 +122,7 @@ J = (Iled * 1000) / (A * 0.01)
 result['J mA cm^-2'] = J
 
 # Get photon flux Φphd photons s^-1 sr^-1
-phi = (H * Vphd)/(c * Omega)
+phi = (C * Vphd)/(weighted_avg * Omega)
 
 result['photon flux s^-1 sr^-1'] = phi
 
@@ -128,12 +132,12 @@ EQE = (1.602*10**(-19) * math.pi * phi * 100)/Iled
 result['EQE %'] = EQE
 
 # Get luminous density L cd m^-2
-L = (H * k * Vphd)/(c * Omega * A*10**(-6))
+L = (C * k * Vphd)/(weighted_avg * Omega * A*10**(-6))
 
 result['luminous density L cd m^-2'] = L
 
 # Write all results to the csv file
-result.to_csv(r'enter the your file path of LED V-I-L data again', index=False)
+result.to_csv(bb, index=False)
 
 
 # Plot J-V-L
